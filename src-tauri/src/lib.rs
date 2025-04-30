@@ -95,7 +95,7 @@ fn remove_all_files(app_handle: AppHandle, dir_name: String) -> Result<(), Strin
         .map_err(|e| e.to_string())
 }
 
-fn verif_departments(dep: String) -> bool {
+fn verif_departments(dep: String) -> Option<Vec<String>> {
     const DEPARTMENTS: [&str; 101] = [
         "01", "02", "03", "04", "05", "06", "07", "08", "09", "10",
         "11", "12", "13", "14", "15", "16", "17", "18", "19", "21",
@@ -108,7 +108,14 @@ fn verif_departments(dep: String) -> bool {
         "82", "83", "84", "85", "86", "87", "88", "89", "90", "91",
         "92", "93", "94", "95", "2A", "2B", "971", "972", "973", "974", "976"
     ];
+    let mut res: Vec<String> = Vec::new();
 
+    if dep.is_empty() {
+        for dep in DEPARTMENTS {
+            res.push(dep.to_string());
+        }
+        return Some(res);
+    }
     let deps: Vec<&str> = dep
         .split(|c| c == ',' || c == ' ')
         .filter_map(|s| {
@@ -118,10 +125,11 @@ fn verif_departments(dep: String) -> bool {
         .collect();
     for dep in deps {
         if !DEPARTMENTS.contains(&dep) {
-            return false;
+            return None;
         }
+        res.push(dep.to_string());
     }
-    true
+    Some(res)
 }
 
 fn handle_kelfoncier_files(path: PathBuf, app_handle: AppHandle, department_code: String) {
@@ -179,16 +187,20 @@ fn generate(app_handle: AppHandle, form_data: FormData) -> Result<(), String> {
     if form_data.directory.is_empty() {
         return Err("Un des champs obligatoire est vide".to_string());
     }
-    if !verif_departments(form_data.dep.clone()) {
-        println!("Invalid department: {}", form_data.dep);
-        return Err("Invalid department: {form_data.dep}".to_string());
-    }
-    handle_kelfoncier_files(path.clone(), app_handle.clone(), form_data.dep.clone());
-    if let Err(e) = launch_generation(form_data.directory, form_data.filename, app_handle,
-        form_data.dep
-    ) {
-        eprintln!("{}", e);
-        return Err(e);
+    let Some(departments) = verif_departments(form_data.dep) else {
+        return Err("Invalid department {form_data.dep}".to_string());
+    };
+
+    let app_handle_clone = app_handle.clone();
+    for dep in departments {
+        let filename = if form_data.filename.is_empty() { dep.clone() } else { form_data.filename.clone() };
+        handle_kelfoncier_files(path.clone(), app_handle_clone.clone(), dep.clone());
+        if let Err(e) = launch_generation(form_data.directory.clone(), filename, app_handle_clone.clone(),
+            dep
+        ) {
+            eprintln!("{}", e);
+            return Err(e);
+        }
     }
     Ok(())
 }
