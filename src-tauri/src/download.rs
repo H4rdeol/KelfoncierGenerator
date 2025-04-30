@@ -11,6 +11,8 @@ use std::thread::sleep;
 use std::time::Duration;
 use tauri::{ AppHandle, Emitter, Manager };
 use std::sync::{Arc, atomic::{AtomicBool, Ordering}};
+use dotenvy::dotenv;
+use std::env;
 
 struct ScriptParameters {
     script_folder: String,
@@ -28,7 +30,8 @@ pub fn get_directory(app_handle: &AppHandle, name: String) -> Result<PathBuf, St
     Ok(path)
 }
 
-fn launch_downloader(parameters: ScriptParameters, app_handle: AppHandle) {
+fn launch_downloader(parameters: ScriptParameters, app_handle: AppHandle) -> Result<(), String> {
+    dotenv().ok();
     let ScriptParameters {script_folder, store_folder, department_code} = parameters;
     let stop_flag = Arc::new(AtomicBool::new(false));
     let stop_flag_clone = stop_flag.clone();
@@ -50,6 +53,7 @@ fn launch_downloader(parameters: ScriptParameters, app_handle: AppHandle) {
             store_folder.to_str().unwrap().to_string(),
             department_code
         ])
+        .envs(env::vars())
         .output()
         .expect("Failed to launch the downloader");
 
@@ -57,8 +61,10 @@ fn launch_downloader(parameters: ScriptParameters, app_handle: AppHandle) {
     if let Err(_) = periodic_refresh.join() {
         eprintln!("Error during joining thread");
     }
-    println!("stdout: {}", String::from_utf8_lossy(&output.stdout));
-    println!("stderr: {}", String::from_utf8_lossy(&output.stderr));
+    if String::from_utf8_lossy(&output.stderr) != "" {
+        return Err(String::from_utf8_lossy(&output.stderr).to_string());
+    }
+    Ok(())
 }
 
 pub fn get_kelfoncier_files(app_handle: &AppHandle, department_code: String) -> Result<(), String> {
@@ -85,6 +91,6 @@ pub fn get_kelfoncier_files(app_handle: &AppHandle, department_code: String) -> 
             department_code: department_code
         },
         app_handle_clone
-    );
+    )?;
     Ok(())
 }

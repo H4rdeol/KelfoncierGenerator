@@ -132,11 +132,11 @@ fn verif_departments(dep: String) -> Option<Vec<String>> {
     Some(res)
 }
 
-fn handle_kelfoncier_files(path: PathBuf, app_handle: AppHandle, department_code: String) {
+fn handle_kelfoncier_files(path: PathBuf, app_handle: AppHandle, department_code: String) -> Result<(), String>{
    if !path.exists() {
         if let Err(err) = fs::create_dir_all(path.clone()) {
             println!("Failed to create directory: {}", err);
-            return;
+            return Ok(());
         }
     }
     let files = fs::read_dir(path).unwrap().filter_map( |entry | {
@@ -145,10 +145,9 @@ fn handle_kelfoncier_files(path: PathBuf, app_handle: AppHandle, department_code
             entry.path().to_str().unwrap().to_string()
         }).collect::<Vec<_>>();
     if files.len() == 0 {
-        if let Err(e) = get_kelfoncier_files(&app_handle, department_code) {
-            eprintln!("Error downloading kelfoncier files: {}", e);
-        }
+        get_kelfoncier_files(&app_handle, department_code)?;
     }
+    Ok(())
 }
 
 fn launch_generation(
@@ -194,7 +193,7 @@ fn generate(app_handle: AppHandle, form_data: FormData) -> Result<(), String> {
     let app_handle_clone = app_handle.clone();
     for dep in departments {
         let filename = if form_data.filename.is_empty() { dep.clone() } else { form_data.filename.clone() };
-        handle_kelfoncier_files(path.clone(), app_handle_clone.clone(), dep.clone());
+        handle_kelfoncier_files(path.clone(), app_handle_clone.clone(), dep.clone())?;
         if let Err(e) = launch_generation(form_data.directory.clone(), filename, app_handle_clone.clone(),
             dep
         ) {

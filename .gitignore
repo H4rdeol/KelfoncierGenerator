@@ -24,3 +24,8 @@ dist-ssr
 *.sw?
 
 src-tauri/.env
+
+.env*
+.flaskenv*
+!.env.project
+!.env.vault
