@@ -1,0 +1,69 @@
+name: Build and Release
+
+on:
+  workflow_dispatch:  # Tu peux aussi ajouter "push" si tu veux auto-déclencher au push
+    inputs:
+      environment:
+        description: 'Build environment'
+        required: false
+        default: 'production'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # nécéssaire pour pousser des tags et créer des releases
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Tauri CLI
+        run: cargo install tauri-cli
+
+      - name: Generate UUID tag
+        id: tag
+        run: echo "TAG=release-$(uuidgen)" >> $GITHUB_OUTPUT
+
+      - name: Create and push git tag
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git tag ${{ steps.tag.outputs.TAG }}
+          git push origin ${{ steps.tag.outputs.TAG }}
+
+      - name: Build Tauri app
+        run: |
+          npm run tauri build
+        env:
+          NODE_ENV: production
+          API_KEY: ${{ secrets.API_KEY }}
+          EMAIL: ${{ secrets.EMAIL || '' }}
+          PASSWORD: ${{ secrets.PASSWORD || '' }}
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.tag.outputs.TAG }}
+          name: "Release ${{ steps.tag.outputs.TAG }}"
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload artifacts (optionnel)
+        uses: actions/upload-artifact@v3
+        with:
+          name: binaries
+          path: src-tauri/target/release/bundle
+
