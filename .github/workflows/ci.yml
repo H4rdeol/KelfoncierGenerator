@@ -58,6 +58,12 @@ jobs:
           tag_name: ${{ steps.tag.outputs.TAG }}
           name: "Release ${{ steps.tag.outputs.TAG }}"
           generate_release_notes: true
+          files: |
+            src-tauri/target/release/bundle/**/*.deb
+            src-tauri/target/release/bundle/**/*.AppImage
+            src-tauri/target/release/bundle/**/*.dmg
+            src-tauri/target/release/bundle/**/*.msi
+            src-tauri/target/release/bundle/**/*.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -65,5 +71,4 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: binaries
-          path: |
-            src-tauri/target/release/*
+          path: src-tauri/target/release/bundle/
