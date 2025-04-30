@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "spve_app",
+        "title": "SPVE x Kelfoncier",
         "width": 1280,
         "height": 800,
         "minHeight": 400,
