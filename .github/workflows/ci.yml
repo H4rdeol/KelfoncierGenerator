@@ -1,6 +1,6 @@
 name: Build and Release
 on:
-  workflow_dispatch: # Déclenchement manuel via l'interface GitHub
+  workflow_dispatch:
     inputs:
       environment:
         description: 'Build environment'
@@ -8,12 +8,12 @@ on:
         default: 'production'
   push:
     branches:
-      - main # Se déclenche automatiquement lors d'un push sur main
+      - main
 jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: write # nécéssaire pour pousser des tags et créer des releases
+      contents: write
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
@@ -66,8 +66,4 @@ jobs:
         with:
           name: binaries
           path: |
-            src-tauri/target/release/bundle/**/*.deb
-            src-tauri/target/release/bundle/**/*.AppImage
-            src-tauri/target/release/bundle/**/*.dmg
-            src-tauri/target/release/bundle/**/*.msi
-            src-tauri/target/release/bundle/**/*.exe
+            src-tauri/target/release/*
