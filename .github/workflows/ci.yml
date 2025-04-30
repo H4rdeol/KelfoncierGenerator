@@ -29,7 +29,8 @@ jobs:
 
       - name: Generate UUID tag
         id: tag
-        run: echo "TAG=release-$(uuidgen)" >> $GITHUB_OUTPUT
+        run: |
+          echo "TAG=release-$(node -e \"console.log(require('crypto').randomUUID())\")" >> $GITHUB_OUTPUT
 
       - name: Set up Node.js
         uses: actions/setup-node@v3
