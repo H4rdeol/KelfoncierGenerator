@@ -27,10 +27,10 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Generate UUID tag (cross-platform)
+      - name: Generate timestamp-based tag
         id: tag
         run: |
-          echo "TAG=release-$(node -p \"require('crypto').randomUUID()\")" >> $GITHUB_OUTPUT
+          echo "TAG=release-$(date +%Y%m%d-%H%M%S)" >> $GITHUB_OUTPUT
         shell: bash
 
       - name: Set up Node.js
