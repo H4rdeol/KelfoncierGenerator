@@ -52,11 +52,11 @@ jobs:
       - name: install frontend dependencies
         run: yarn install
 
-      - name: Generate .env from secrets
+      - name: Export secrets for build
         run: |
-          echo "API_KEY=${{ secrets.API_KEY }}" >> .env
-          echo "EMAIL=${{ secrets.EMAIL }}" >> .env
-          echo "PASSWORD=${{ secrets.PASSWORD }}" >> .env
+          echo "API_KEY=${{ secrets.API_KEY }}" >> $GITHUB_ENV
+          echo "EMAIL=${{ secrets.EMAIL }}"  >> $GITHUB_ENV
+          echo "PASSWORD=${{ secrets.PASSWORD }}" >> $GITHUB_ENV
 
       - uses: tauri-apps/tauri-action@v0
         env:
