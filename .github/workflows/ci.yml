@@ -1,70 +1,139 @@
-name: 'publish'
+name: CI
 
 on:
-  workflow_dispatch:
   push:
-    branches:
-      - main
+    branches: [ main ]
 
 jobs:
-  publish-tauri:
-    permissions:
-      contents: write
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      TAG: ${{ steps.tag.outputs.release_tag }}
+    steps:
+      - name: Generate Release Tag
+        id: tag
+        run: |
+          TAG=release-$(date +'%Y%m%d-%H%M%S')
+          echo "::set-output name=release_tag::$TAG"
+
+  build:
+    needs: prepare
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - platform: 'macos-latest' # for Arm based macs (M1 and above).
-            args: '--target aarch64-apple-darwin'
-          - platform: 'macos-latest' # for Intel based macs.
-            args: '--target x86_64-apple-darwin'
-          - platform: 'ubuntu-22.04'
-            args: ''
-          - platform: 'windows-latest'
-            args: ''
-
-    runs-on: ${{ matrix.platform }}
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    env:
+      API_KEY: ${{ secrets.API_KEY }}
+      EMAIL: ${{ secrets.EMAIL }}
+      PASSWORD: ${{ secrets.PASSWORD }}
+      RELEASE_TAG: ${{ needs.prepare.outputs.TAG }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - name: install dependencies (ubuntu only)
-        if: matrix.platform == 'ubuntu-22.04' # This must match the platform value defined above.
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
-
-      - name: setup node
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: lts/*
-          cache: 'yarn' # Set this to npm, yarn or pnpm.
+          node-version: 'lts/*'
 
-      - name: install Rust stable
-        uses: dtolnay/rust-toolchain@stable # Set this to dtolnay/rust-toolchain@nightly
+      - name: Setup Rust
+        uses: actions-rs/toolchain@v1
         with:
-          # Those targets are only used on macos runners so it's in an `if` to slightly speed up windows and linux builds.
-          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+          toolchain: stable
+          profile: minimal
 
-      - name: Rust cache
-        uses: swatinem/rust-cache@v2
+      - name: Install dependencies (Ubuntu only)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.0-dev libwebkit2gtk-4.1-dev \
+            libappindicator3-dev librsvg2-dev patchelf
+
+      # (Aucun webkit2gtk sur macOS; rien à installer ici pour mac)
+      # (Pour Windows, ajouter d'autres dépendances si nécessaire)
+
+      - name: Install project dependencies
+        run: npm install
+
+      - name: Build Tauri App
+        run: npm run tauri build
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
         with:
-          workspaces: './src-tauri -> target'
+          name: build-${{ matrix.os }}-${{ env.RELEASE_TAG }}
+          path: src-tauri/target/release/bundle
 
-      - name: install frontend dependencies
-        # If you don't have `beforeBuildCommand` configured you may want to build your frontend here too.
-        run: yarn install # change this to npm or pnpm depending on which one you use.
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Linux artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: build-ubuntu-latest-${{ needs.prepare.outputs.TAG }}
+          path: build/linux
 
-      - uses: tauri-apps/tauri-action@v0
+      - name: Download Windows artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: build-windows-latest-${{ needs.prepare.outputs.TAG }}
+          path: build/windows
+
+      - name: Download macOS artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: build-macos-latest-${{ needs.prepare.outputs.TAG }}
+          path: build/macos
+
+      - name: Archive Linux artifacts
+        run: zip -r linux-artifacts.zip build/linux
+
+      - name: Archive Windows artifacts
+        run: zip -r windows-artifacts.zip build/windows
+
+      - name: Archive macOS artifacts
+        run: zip -r macos-artifacts.zip build/macos
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NODE_ENV: production
-          API_KEY: ${{ secrets.API_KEY }}
-          EMAIL: ${{ secrets.EMAIL }}
-          PASSWORD: ${{ secrets.PASSWORD }}
         with:
-          tagName: app-v__VERSION__ # the action automatically replaces \_\_VERSION\_\_ with the app version.
-          releaseName: 'App v__VERSION__'
-          releaseBody: 'See the assets to download this version and install.'
-          releaseDraft: true
+          tag_name: ${{ needs.prepare.outputs.TAG }}
+          release_name: Release ${{ needs.prepare.outputs.TAG }}
+          draft: false
           prerelease: false
-          args: ${{ matrix.args }}
+
+      - name: Upload Linux Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: linux-artifacts.zip
+          asset_name: linux-artifacts.zip
+          asset_content_type: application/zip
+
+      - name: Upload Windows Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: windows-artifacts.zip
+          asset_name: windows-artifacts.zip
+          asset_content_type: application/zip
+
+      - name: Upload macOS Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: macos-artifacts.zip
+          asset_name: macos-artifacts.zip
+          asset_content_type: application/zip
