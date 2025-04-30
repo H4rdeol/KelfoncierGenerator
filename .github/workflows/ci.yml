@@ -1,4 +1,5 @@
 name: Build and Release
+
 on:
   workflow_dispatch:
     inputs:
@@ -9,29 +10,31 @@ on:
   push:
     branches:
       - main
+
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     permissions:
       contents: write
+
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        # Optionnel : si tu veux cibler d'autres archs
+        arch: [x64]
+
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+
+      - name: Generate UUID tag
+        id: tag
+        run: echo "TAG=release-$(uuidgen)" >> $GITHUB_OUTPUT
 
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
           node-version: 18
-
-      - name: Install Linux dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libglib2.0-dev build-essential \
-          curl wget libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev \
-          libwebkit2gtk-4.1-dev
-
-      - name: Install dependencies
-        run: npm install
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -39,43 +42,73 @@ jobs:
       - name: Install Tauri CLI
         run: cargo install tauri-cli
 
-      - name: Generate UUID tag
-        id: tag
-        run: echo "TAG=release-$(uuidgen)" >> $GITHUB_OUTPUT
-
-      - name: Create and push git tag
+      - name: Install OS-specific dependencies
         run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          git tag ${{ steps.tag.outputs.TAG }}
-          git push origin ${{ steps.tag.outputs.TAG }}
+          if [ "${{ matrix.os }}" == "ubuntu-latest" ]; then
+            sudo apt-get update
+            sudo apt-get install -y libglib2.0-dev build-essential \
+              curl wget libssl-dev libgtk-3-dev libayatana-appindicator3-dev \
+              librsvg2-dev libwebkit2gtk-4.1-dev
+          elif [ "${{ matrix.os }}" == "macos-latest" ]; then
+            brew update
+            brew install gtk+3 webkit2gtk
+          elif [ "${{ matrix.os }}" == "windows-latest" ]; then
+            choco install gtk-runtime webkitgtk-runtime -y
+          fi
+
+      - name: Install JS dependencies
+        run: npm ci
+
+      - name: Build frontend
+        run: npm run build
 
       - name: Build Tauri app
-        run: |
-          npm run tauri build
+        run: npm run tauri build
         env:
           NODE_ENV: production
           API_KEY: ${{ secrets.API_KEY }}
-          EMAIL: ${{ secrets.EMAIL || '' }}
-          PASSWORD: ${{ secrets.PASSWORD || '' }}
-
-      - name: Create GitHub release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: ${{ steps.tag.outputs.TAG }}
-          name: "Release ${{ steps.tag.outputs.TAG }}"
-          generate_release_notes: true
-          files: |
-            src-tauri/target/release/bundle/**/*.deb
-            src-tauri/target/release/bundle/**/*.AppImage
-            src-tauri/target/release/bundle/**/*.dmg
-            src-tauri/target/release/bundle/**/*.msi
-            src-tauri/target/release/bundle/**/*.exe
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EMAIL: ${{ secrets.EMAIL }}
+          PASSWORD: ${{ secrets.PASSWORD }}
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: binaries
-          path: src-tauri/target/release/bundle/
+          name: app-${{ matrix.os }}
+          path: |
+            src-tauri/target/release/bundle/**/*
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: app-ubuntu-latest
+          path: artifacts/linux
+      - uses: actions/download-artifact@v4
+        with:
+          name: app-windows-latest
+          path: artifacts/windows
+      - uses: actions/download-artifact@v4
+        with:
+          name: app-macos-latest
+          path: artifacts/macos
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ needs.build.outputs.TAG }}
+          name: Release ${{ needs.build.outputs.TAG }}
+          files: |
+            artifacts/linux/**
+            artifacts/windows/**
+            artifacts/macos/**
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
