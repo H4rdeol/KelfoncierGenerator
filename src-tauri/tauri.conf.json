@@ -36,7 +36,11 @@
     ],
     "resources": [
         "resources/scripts/find.py",
-        "resources/scripts/generation.py"
+        "resources/scripts/find",
+        "resources/scripts/find.exe",
+        "resources/scripts/generation.py",
+        "resources/scripts/generation",
+        "resources/scripts/generation.exe"
     ]
   }
 }
