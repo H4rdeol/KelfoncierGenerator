@@ -47,9 +47,8 @@ fn launch_downloader(parameters: ScriptParameters, app_handle: AppHandle) -> Res
         }
 
     });
-    let output = Command::new("python3")
+    let output = Command::new(script_folder)
         .args([
-            script_folder,
             store_folder.to_str().unwrap().to_string(),
             department_code
         ])

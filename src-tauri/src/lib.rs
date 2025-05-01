@@ -169,9 +169,8 @@ fn launch_generation(
         .unwrap()
         .join("resources/scripts/")
         .join(script_file);
-    let output = Command::new("python3")
+    let output = Command::new(script_path.to_str().unwrap().to_string())
         .args([
-            script_path.to_str().unwrap().to_string(),
             directory,
             file,
             base_path.to_str().unwrap().to_string(),
