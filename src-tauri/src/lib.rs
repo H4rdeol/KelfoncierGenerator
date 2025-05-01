@@ -157,11 +157,18 @@ fn launch_generation(
         Ok(path) => path,
         Err(e) => return Err(format!("Failed to get app data directory: {}", e))
     };
+    let mut script_file = match std::env::consts::OS {
+        "windows" => format!("generation.exe"),
+        "macos" => format!("generation"),
+        "linux" => format!("generation"),
+        _ => panic!("Unsupported OS"),
+    };
     let script_path = app_handle
         .path()
         .resource_dir()
         .unwrap()
-        .join("resources/scripts/generation.py");
+        .join("resources/scripts/")
+        .join(script_file);
     let output = Command::new("python3")
         .args([
             script_path.to_str().unwrap().to_string(),

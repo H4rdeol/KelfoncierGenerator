@@ -58,6 +58,22 @@ jobs:
           echo "EMAIL=${{ secrets.EMAIL }}"  >> $GITHUB_ENV
           echo "PASSWORD=${{ secrets.PASSWORD }}" >> $GITHUB_ENV
 
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install PyInstaller
+        run: pip install pyinstaller
+
+      - name: Compile Python scripts
+        run: |
+          cd src-tauri/resources/scripts
+          for script in *.py; do
+            pyinstaller --onefile --distpath . --workpath build --specpath build $script
+          done
+        shell: bash
+
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

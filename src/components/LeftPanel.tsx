@@ -28,7 +28,6 @@ function LeftPanel() {
         filename: "",
         directory: ""
     })
-    const [test, setTest] = useState("")
 
     const isValidDep = (value: string) => /^\s*\d{2,3}(\s*,?\s*\d{2,3})*\s*$/.test(value);
 
@@ -44,12 +43,6 @@ function LeftPanel() {
         }
     };
 
-    const email = async () => {
-        const env: string = await invoke('get_env', { name: 'EMAIL' });
-        setTest(env);
-    };
-
-    email()
     return (
         <ResizablePanel defaultSize={800}>
             <Title title="Recherche" bgColor="#1E1E2F"/>
@@ -97,7 +90,6 @@ function LeftPanel() {
                             }
                             { error !== "" && <AlertDestructive text={ error }/>}
                         </div>
-                        <h1> { test } </h1>
                     </ ResizablePanel>
                 </ ResizablePanelGroup>
             </div>

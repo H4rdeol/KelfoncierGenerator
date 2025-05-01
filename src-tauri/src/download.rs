@@ -79,11 +79,18 @@ pub fn get_kelfoncier_files(app_handle: &AppHandle, department_code: String) -> 
         }
         Err(e) => return Err(e),
     };
+    let mut script_file = match std::env::consts::OS {
+        "windows" => format!("find.exe"),
+        "macos" => format!("find"),
+        "linux" => format!("find"),
+        _ => panic!("Unsupported OS"),
+    };
     let script_path = app_handle
         .path()
         .resource_dir()
         .unwrap()
-        .join("resources/scripts/find.py");
+        .join("resources/scripts/")
+        .join(script_file);
     let app_handle_clone = app_handle.clone();
 
     launch_downloader(
