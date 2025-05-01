@@ -1,6 +1,5 @@
 altgraph==0.17.4
 annotated-types==0.7.0
-apparmor
 attrs
 autocommand==2.2.2
 btrfsutil==6.14
