@@ -69,6 +69,7 @@ jobs:
       - name: Compile Python scripts
         run: |
           cd src-tauri/resources/scripts
+          pip install -r requirements.txt
           for script in *.py; do
             pyinstaller --onefile --distpath . --workpath build --specpath build $script
           done
