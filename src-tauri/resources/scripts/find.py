@@ -80,7 +80,6 @@ def connect_to_api():
         print(f"Erreur lors de la connexion à l'API: {resp.status_code}.\n {resp.text}")
         exit(1)
     resp_json = resp.json()
-    dotenv.set_key(dotenv.find_dotenv(), "API_KEY", resp_json['token'])
     dotenv.load_dotenv()
     return resp_json['token']
 
@@ -98,8 +97,6 @@ def find_files(dept: str, folder: str):
         resp = requests.post(f"https://pv.kelfoncier.com/api/building-consumption/{c['lat']}/{c['lon']}/radius/20/generate?plotNumber=", headers=header)
         if resp.status_code == 401:
             apiKey = connect_to_api()
-            dotenv.set_key(dotenv.find_dotenv(), "API_KEY", apiKey)
-            dotenv.load_dotenv()
             header = {
                 "Authorization": f"Bearer {apiKey}",
             }
