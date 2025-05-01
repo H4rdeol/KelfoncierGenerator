@@ -53,7 +53,9 @@ fn launch_downloader(parameters: ScriptParameters, app_handle: AppHandle) -> Res
             store_folder.to_str().unwrap().to_string(),
             department_code
         ])
-        .envs(env::vars())
+        .env("EMAIL", env!("EMAIL"))
+        .env("PASSWORD", env!("PASSWORD"))
+        .env("API_KEY", env!("API_KEY"))
         .output()
         .expect("Failed to launch the downloader");
 

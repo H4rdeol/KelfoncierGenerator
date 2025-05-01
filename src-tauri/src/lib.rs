@@ -13,6 +13,7 @@ use serde::Deserialize;
 use tauri::{AppHandle, Emitter, Manager};
 use tokio::task;
 use download::{ get_directory, get_kelfoncier_files };
+use dotenvy::dotenv;
 
 #[derive(Deserialize, Debug)]
 struct FormData {
@@ -204,8 +205,15 @@ fn generate(app_handle: AppHandle, form_data: FormData) -> Result<(), String> {
     Ok(())
 }
 
+#[tauri::command]
+fn get_env(name: String) -> String {
+    let email = env!("EMAIL");
+    std::env::var(name).unwrap_or(email.to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    dotenv().ok();
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
@@ -215,7 +223,8 @@ pub fn run() {
             get_files,
             remove_file,
             remove_all_files,
-            generate
+            generate,
+            get_env
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
