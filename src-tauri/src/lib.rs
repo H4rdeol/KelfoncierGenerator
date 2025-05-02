@@ -186,6 +186,18 @@ fn launch_generation(
     Ok(())
 }
 
+fn clear_directory(dir_path: PathBuf) -> Result<(), String> {
+    for entry in fs::read_dir(dir_path)? {
+        let entry = entry?;
+        let path = entry.path();
+
+        if path.is_file() {
+            fs::remove_file(&path)?;
+        }
+    }
+    Ok(())
+}
+
 #[tauri::command(async)]
 fn generate(app_handle: AppHandle, form_data: FormData) -> Result<(), String> {
     let path = get_directory(&app_handle, "kelfoncier".to_string())?;
@@ -207,6 +219,7 @@ fn generate(app_handle: AppHandle, form_data: FormData) -> Result<(), String> {
             eprintln!("{}", e);
             return Err(e);
         }
+        clear_directory(path);
     }
     Ok(())
 }
