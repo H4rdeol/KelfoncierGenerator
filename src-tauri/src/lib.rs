@@ -157,7 +157,7 @@ fn launch_generation(
         Ok(path) => path,
         Err(e) => return Err(format!("Failed to get app data directory: {}", e))
     };
-    let mut script_file = match std::env::consts::OS {
+    let script_file = match std::env::consts::OS {
         "windows" => format!("generation.exe"),
         "macos" => format!("generation"),
         "linux" => format!("generation"),
@@ -187,12 +187,12 @@ fn launch_generation(
 }
 
 fn clear_directory(dir_path: PathBuf) -> Result<(), String> {
-    for entry in fs::read_dir(dir_path)? {
-        let entry = entry?;
+    for entry in fs::read_dir(dir_path).map_err(|e| { e.to_string() })? {
+        let entry = entry.map_err(| e | { e.to_string() })?;
         let path = entry.path();
 
         if path.is_file() {
-            fs::remove_file(&path)?;
+            fs::remove_file(&path).map_err(| e | { e.to_string() })?;
         }
     }
     Ok(())

@@ -78,7 +78,7 @@ pub fn get_kelfoncier_files(app_handle: &AppHandle, department_code: String) -> 
         }
         Err(e) => return Err(e),
     };
-    let mut script_file = match std::env::consts::OS {
+    let script_file = match std::env::consts::OS {
         "windows" => format!("find.exe"),
         "macos" => format!("find"),
         "linux" => format!("find"),
