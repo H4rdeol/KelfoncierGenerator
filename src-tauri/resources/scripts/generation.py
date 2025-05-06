@@ -65,23 +65,24 @@ def get_tels_list(dict_telephone, siret_list):
     return tels_list
 
 
-def merge_values_into_diction(telephone, conso, sector):
+def merge_values_into_diction(telephone, conso, sector, codeNAF):
     return {
         "nom": telephone["name"],
         "telephone": telephone["telephone"],
+        "consommation en MWh": conso,
+        "secteur": sector,
+        "code NAF": codeNAF,
         "adresse": telephone["address"],
         "ville": telephone["ville"],
         "code postal": telephone["code postal"],
-        "email": telephone["email"],
-        "consommation en MWh": conso,
-        "secteur": sector,
+        "email": telephone["email"]
     }
 
 
-def merge_all_values_for_siret(tels, conso, sector):
+def merge_all_values_for_siret(tels, conso, sector, codeNAF):
     merged_list = []
     for tel in tels:
-        merged_list.append(merge_values_into_diction(tel, conso, sector))
+        merged_list.append(merge_values_into_diction(tel, conso, sector, codeNAF))
     return merged_list
 
 
@@ -111,11 +112,12 @@ def get_all_correspondances(dataframe_kelfoncier, dataframe_telephone):
     strings = dataframe_kelfoncier["Adresse du point de livraison"].astype(str).tolist()
     consos = dataframe_kelfoncier["Consommation en MWh"].astype(float).tolist()
     sectors = dataframe_kelfoncier["Secteur d'activité"].astype(str).tolist()
+    codeNAFs = dataframe_kelfoncier["Code NAF"].astype(str).tolist()
     for index, address in enumerate(strings):
         siret_list = searchSiretByAddress(address, len_siret == 9)
         if siret_list:
             tels = get_tels_list(dict_telephone, siret_list)
-            all_correspondances += merge_all_values_for_siret(tels, consos[index], sectors[index])
+            all_correspondances += merge_all_values_for_siret(tels, consos[index], sectors[index], codeNAFs[index])
     return all_correspondances
 
 
