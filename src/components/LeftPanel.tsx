@@ -29,7 +29,7 @@ function LeftPanel() {
         directory: ""
     })
 
-    const isValidDep = (value: string) => /^\s*\d{2,3}(\s*,?\s*\d{2,3})*\s*$/.test(value);
+    const isValidDep = (value: string) => /^\s*(\d{2,3}|2A|2B)(\s*,?\s*(\d{2,3}|2A|2B))*\s*$/.test(value);
 
     const handleClick = async () => {
         setLoading(true);

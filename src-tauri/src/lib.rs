@@ -219,7 +219,7 @@ fn generate(app_handle: AppHandle, form_data: FormData) -> Result<(), String> {
             eprintln!("{}", e);
             return Err(e);
         }
-        clear_directory(path.clone());
+        clear_directory(path.clone())?;
     }
     Ok(())
 }
