@@ -16,7 +16,7 @@ def get_sirets_from_etablissement(etablissements):
     siret_list = []
     for etablissement in etablissements:
         if "siret" in etablissement:
-            siret_list.append(etablissement["siret"])
+            siret_list.append((etablissement["siret"], etablissement["activite_principale"]))
     return siret_list
 
 
@@ -24,7 +24,7 @@ def get_sirens_from_etablissement(etablissements):
     siren_list = []
     for etablissement in etablissements:
         if "siren" in etablissement:
-            siren_list.append(etablissement["siren"])
+            siren_list.append((etablissement["siren"], etablissement["siege"]["activite_principale"]))
     return siren_list
 
 
@@ -59,9 +59,9 @@ def searchSiretByAddress(address, is_siren: bool=False):
 def get_tels_list(dict_telephone, siret_list):
     tels_list = []
     for siret in siret_list:
-        tel = dict_telephone.get(str(siret))
+        tel = dict_telephone.get(str(siret[0]))
         if tel is not None:
-            tels_list.append(tel)
+            tels_list.append((tel, siret[1]))
     return tels_list
 
 
@@ -79,10 +79,10 @@ def merge_values_into_diction(telephone, conso, sector, codeNAF):
     }
 
 
-def merge_all_values_for_siret(tels, conso, sector, codeNAF):
+def merge_all_values_for_siret(tels, conso, sector):
     merged_list = []
-    for tel in tels:
-        merged_list.append(merge_values_into_diction(tel, conso, sector, codeNAF))
+    for tel, naf in tels:
+        merged_list.append(merge_values_into_diction(tel, conso, sector, naf))
     return merged_list
 
 
@@ -112,12 +112,11 @@ def get_all_correspondances(dataframe_kelfoncier, dataframe_telephone):
     strings = dataframe_kelfoncier["Adresse du point de livraison"].astype(str).tolist()
     consos = dataframe_kelfoncier["Consommation en MWh"].astype(float).tolist()
     sectors = dataframe_kelfoncier["Secteur d'activité"].astype(str).tolist()
-    codeNAFs = dataframe_kelfoncier["Code NAF"].astype(str).tolist()
     for index, address in enumerate(strings):
         siret_list = searchSiretByAddress(address, len_siret == 9)
         if siret_list:
             tels = get_tels_list(dict_telephone, siret_list)
-            all_correspondances += merge_all_values_for_siret(tels, consos[index], sectors[index], codeNAFs[index])
+            all_correspondances += merge_all_values_for_siret(tels, consos[index], sectors[index])
     return all_correspondances
 
 
