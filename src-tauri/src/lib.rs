@@ -19,7 +19,8 @@ use dotenvy::dotenv;
 struct FormData {
     filename: String,
     directory: String,
-    dep: String
+    dep: String,
+    power:String
 }
 
 #[tauri::command(async)]
@@ -152,7 +153,7 @@ fn handle_kelfoncier_files(path: PathBuf, app_handle: AppHandle, department_code
 }
 
 fn launch_generation(
-    directory: String, file: String, app_handle: AppHandle, department_code: String) -> Result<(), String> {
+    directory: String, file: String, app_handle: AppHandle, department_code: String, power: String) -> Result<(), String> {
     let base_path = match app_handle.path().app_data_dir() {
         Ok(path) => path,
         Err(e) => return Err(format!("Failed to get app data directory: {}", e))
@@ -174,7 +175,8 @@ fn launch_generation(
             directory,
             file,
             base_path.to_str().unwrap().to_string(),
-            department_code
+            department_code,
+            power
         ])
         .output()
         .map_err(|e| { e.to_string() })?;
@@ -214,7 +216,7 @@ fn generate(app_handle: AppHandle, form_data: FormData) -> Result<(), String> {
         let filename = if form_data.filename.is_empty() { dep.clone() } else { form_data.filename.clone() };
         handle_kelfoncier_files(path.clone(), app_handle_clone.clone(), dep.clone())?;
         if let Err(e) = launch_generation(form_data.directory.clone(), filename, app_handle_clone.clone(),
-            dep
+            dep, form_data.power.clone()
         ) {
             eprintln!("{}", e);
             return Err(e);

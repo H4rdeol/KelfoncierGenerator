@@ -21,15 +21,18 @@ function LeftPanel() {
     const [error, setError] = useState("");
     const [formErrors, setFormErrors] = useState({
         dep: false,
-        filename: false
+        filename: false,
+        power: false
       });
     const [formData, setFormData] = useState({
         dep: "",
         filename: "",
-        directory: ""
+        directory: "",
+        power: "36"
     })
 
     const isValidDep = (value: string) => /^\s*(\d{2,3}|2A|2B)(\s*,?\s*(\d{2,3}|2A|2B))*\s*$/.test(value);
+    const isNum = (value: string) => /^\d/.test(value)
 
     const handleClick = async () => {
         setLoading(true);
@@ -69,6 +72,20 @@ function LeftPanel() {
                                     setFormErrors({ ...formErrors, dep: !isValidDep(value) });
                                 }}
                                 isError={formErrors.dep}
+                            />
+                            <InputWithLabel
+                                label="Puissance minimale en MWh (par défaut 36MWh):"
+                                id="researchPower"
+                                placeholder="36"
+                                onSubmit={(value) => {
+                                    setFormData({ ...formData, power: value});
+                                    setFormErrors({ ...formErrors, power: !isNum(value)})
+                                }}
+                                onValueChange={(value) => {
+                                    setFormData({ ...formData, power: value });
+                                    setFormErrors({ ...formErrors, power: !isNum(value)})
+                                }}
+                                isError={formErrors.power}
                             />
                         </div>
                         <InputWithLabel
