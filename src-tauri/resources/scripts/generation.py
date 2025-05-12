@@ -871,7 +871,7 @@ def get_phones(directory: str, department_code: str) -> pd.DataFrame:
 
 
 def apply_filters(df: pd.DataFrame, powerMin: str) -> pd.DataFrame:
-    df.drop_duplicates(inplace=True)
+    df.drop_duplicates(inplace=True, subset=["telephone"])
     df = df[df["Secteur d'activité"] != "Résidentiel"]
     df = df[df["Consommation en MWh"] > int(powerMin)]
     return df
