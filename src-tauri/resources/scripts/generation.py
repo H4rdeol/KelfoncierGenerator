@@ -871,7 +871,7 @@ def get_phones(directory: str, department_code: str) -> pd.DataFrame:
 
 
 def apply_filters(df: pd.DataFrame, powerMin: str) -> pd.DataFrame:
-    df.drop_duplicates(inplace=True, subset=["telephone"])
+    df.drop_duplicates(inplace=True)
     df = df[df["Secteur d'activité"] != "Résidentiel"]
     df = df[df["Consommation en MWh"] > int(powerMin)]
     return df
@@ -896,6 +896,7 @@ def main(argv: list[str]):
     phones_df = get_phones(os.path.join(inputFolder, "phones"), department)
     generated_df = generate(kelfoncier_df, phones_df)
     generated_df = delete_useless_postal_codes(generated_df, department)
+    generated_df.drop_duplicates(inplace=True, subset=["telephone"])
 
     generated_df.to_excel(outputFile, index=False)
 
